@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Montréal photoréaliste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>window.CESIUM_BASE_URL='https://cdn.jsdelivr.net/npm/cesium@1.145.0/Build/Cesium/';</script>
+<link href="https://cdn.jsdelivr.net/npm/cesium@1.145.0/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/cesium@1.145.0/Build/Cesium/Cesium.js"></script>
+<style>
+:root{
+  --panel:rgba(250,245,238,.84);--ink:#2b1e16;--muted:#6a5444;--line:rgba(70,45,25,.16);
+  --chip:rgba(70,45,25,.07);--accent:#b3361c;--accent-ink:#fff7f0;--ground:#1d1814;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){color-scheme:dark;--panel:rgba(28,21,17,.78);--ink:#f5ece2;--muted:#cbb8a6;--line:rgba(255,235,215,.16);--chip:rgba(255,235,215,.08);--accent:#d2472a;}
+}
+:root[data-theme="dark"]{color-scheme:dark;--panel:rgba(28,21,17,.78);--ink:#f5ece2;--muted:#cbb8a6;--line:rgba(255,235,215,.16);--chip:rgba(255,235,215,.08);--accent:#d2472a;}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{overflow:hidden;background:var(--ground);color:var(--ink);font-family:'Spline Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+#stage{position:fixed;inset:0}
+.title{position:fixed;left:16px;top:0;padding-top:calc(env(safe-area-inset-top,0px) + 14px);pointer-events:none;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.55);z-index:2}
+.title h1{margin:0;font-size:clamp(20px,4.6vw,30px);font-weight:600;letter-spacing:-.01em;line-height:1.1}
+.title p{margin:4px 0 0;font-size:13px;opacity:.9}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);
+  background:var(--panel);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border-top:1px solid var(--line)}
+@media (min-width:760px){.sheet{left:16px;right:auto;bottom:44px;width:470px;border-radius:18px;border:1px solid var(--line);padding:14px}}
+.views{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.views::-webkit-scrollbar{display:none}
+.views button,.toggle,.btn{flex:0 0 auto;font:inherit;font-size:14px;font-weight:500;color:var(--ink);background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:8px 13px;cursor:pointer;white-space:nowrap}
+.views button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.row label{font-size:14px;color:var(--muted);min-width:44px}
+.row output{font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;min-width:62px;text-align:right}
+input[type=range]{flex:1;accent-color:var(--accent);height:28px;min-width:120px}
+.toggle{padding:6px 11px;font-size:13px}
+.toggle[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:transparent}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.key{position:fixed;inset:0;z-index:5;display:grid;place-items:center;padding:16px;background:rgba(20,15,12,.55)}
+.key[hidden]{display:none}
+.card{width:min(560px,100%);background:var(--panel);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:18px;padding:20px}
+.card h2{margin:0 0 8px;font-size:20px;font-weight:600;text-wrap:balance}
+.card p,.card li{font-size:14px;line-height:1.5;color:var(--ink)}
+.card ol{padding-left:20px;margin:8px 0 14px}
+.card a{color:var(--accent)}
+.card input[type=text]{width:100%;font:inherit;font-size:14px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.6);color:#2b1e16}
+.msg{min-height:20px;font-size:13px;color:var(--accent);margin:8px 0 0}
+.hint{position:fixed;right:16px;top:calc(env(safe-area-inset-top,0px) + 16px);z-index:2;background:rgba(0,0,0,.5);color:#fff;font-size:13px;padding:8px 12px;border-radius:10px;max-width:280px;line-height:1.4}
+@media (max-width:759px){.hint{display:none}}
+.cesium-viewer-bottom{z-index:4}
+.amb{margin-top:10px;font-size:14px;color:var(--muted)}
+.amb summary{cursor:pointer;padding:4px 0}
+.amb[open] summary{color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="title"><h1>Montréal</h1><p>La ville telle que photographiée, en 3D</p></div>
+<div class="hint">Glisser : déplacer. Molette ou pincer : zoomer. Clic droit ou Ctrl + glisser : pivoter et incliner.</div>
+<div class="sheet">
+  <div class="views" id="views" role="group" aria-label="Points de vue">
+    <button data-v="fleuve" aria-pressed="true">Du fleuve</button>
+    <button data-v="centre" aria-pressed="false">Centre-ville</button>
+    <button data-v="kondiaronk" aria-pressed="false">Belvédère Kondiaronk</button>
+    <button data-v="mcgill" aria-pressed="false">Avenue McGill College</button>
+    <button data-v="vieux" aria-pressed="false">Notre-Dame</button>
+    <button data-v="port" aria-pressed="false">Vieux-Port</button>
+    <button data-v="habitat" aria-pressed="false">Habitat 67</button>
+    <button data-v="pont" aria-pressed="false">Pont Jacques-Cartier</button>
+    <button data-v="spectacles" aria-pressed="false">Quartier des spectacles</button>
+    <button data-v="plateau" aria-pressed="false">Plateau</button>
+    <button data-v="lafontaine" aria-pressed="false">Parc La Fontaine</button>
+    <button data-v="canal" aria-pressed="false">Canal de Lachine</button>
+    <button data-v="croix" aria-pressed="false">Croix du mont Royal</button>
+    <button data-v="oratoire" aria-pressed="false">Oratoire</button>
+    <button data-v="stade" aria-pressed="false">Stade olympique</button>
+    <button data-v="aerien" aria-pressed="false">Vue aérienne</button>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button class="toggle" id="tourBtn" aria-pressed="false">Visite guidée</button>
+    <button class="toggle" id="keyBtn" aria-pressed="false">Changer de clé</button>
+  </div>
+  <details class="amb">
+    <summary>Ambiance (facultatif)</summary>
+    <div class="row">
+      <button class="toggle" id="ambBtn" aria-pressed="false">Activer l'ambiance</button>
+      <button class="toggle" id="autumnBtn" aria-pressed="false">Couleurs d'automne</button>
+    </div>
+    <div class="row">
+      <label for="time">Heure</label>
+      <input id="time" type="range" min="7" max="19.5" step="0.05" value="13">
+      <output id="timeOut" for="time">13 h 00</output>
+    </div>
+  </details>
+</div>
+
+<div class="key" id="keyPanel">
+  <div class="card" role="dialog" aria-labelledby="keyTitle">
+    <h2 id="keyTitle">Une clé gratuite pour charger Montréal en 3D</h2>
+    <p>Le maillage photoréaliste vient des tuiles 3D de Google, diffusées officiellement. Il faut une clé d'accès, au choix :</p>
+    <ol>
+      <li><strong>Le plus simple :</strong> un compte gratuit <a href="https://ion.cesium.com/signup" target="_blank" rel="noopener">Cesium ion</a>. Dans <em>Asset Depot</em>, ajoutez « Google Photorealistic 3D Tiles » à vos actifs, puis copiez le jeton « Default » de la page <em>Access Tokens</em>.</li>
+      <li><strong>Ou</strong> une clé Google Maps avec l'API <em>Map Tiles</em> activée (<a href="https://developers.google.com/maps/documentation/tile/3d-tiles" target="_blank" rel="noopener">documentation</a>).</li>
+    </ol>
+    <label for="keyInput" style="font-size:14px;color:var(--muted)">Jeton Cesium ion ou clé Google</label>
+    <input id="keyInput" type="text" autocomplete="off" spellcheck="false" placeholder="eyJhbGciOi…  ou  AIza…">
+    <p style="font-size:12px;color:var(--muted);margin:8px 0 0">La clé reste dans ce navigateur. Les tuiles de Google s'affichent avec leurs mentions obligatoires, en bas de l'écran.</p>
+    <p class="msg" id="keyMsg" role="status"></p>
+    <div class="row" style="justify-content:flex-end"><button class="btn primary" id="keyGo">Charger Montréal</button></div>
+  </div>
+</div>
+
+<script>
+(async function(){
+const keyPanel=document.getElementById('keyPanel'),keyInput=document.getElementById('keyInput'),keyMsg=document.getElementById('keyMsg');
+if(!window.Cesium){keyMsg.textContent="Le moteur 3D n'a pas pu se charger. Vérifiez la connexion Internet puis rechargez la page.";return;}
+const C=Cesium;
+const store={get(){try{return localStorage.getItem('mtl-3d-key')||'';}catch(e){return'';}},set(v){try{localStorage.setItem('mtl-3d-key',v);}catch(e){}}};
+
+/* ---------- visionneuse ---------- */
+const viewer=new C.Viewer('stage',{baseLayer:false,globe:false,baseLayerPicker:false,geocoder:false,homeButton:false,sceneModePicker:false,
+  navigationHelpButton:false,animation:false,timeline:false,fullscreenButton:false,infoBox:false,selectionIndicator:false,shouldAnimate:false});
+const scene=viewer.scene;
+const isMobile=matchMedia('(pointer:coarse)').matches||innerWidth<700;
+scene.skyAtmosphere.show=true;scene.fog.enabled=true;
+scene.highDynamicRange=false;
+if(C.PostProcessStageLibrary.isAmbientOcclusionSupported&&C.PostProcessStageLibrary.isAmbientOcclusionSupported(scene)){
+  const ao=scene.postProcessStages.ambientOcclusion;ao.enabled=false;ao.uniforms.intensity=2.2;ao.uniforms.bias=.1;ao.uniforms.lengthCap=.26;ao.uniforms.stepSize=1;ao.uniforms.blurStepSize=.86;}
+scene.postProcessStages.fxaa.enabled=true;
+viewer.resolutionScale=isMobile?Math.min(window.devicePixelRatio||1,1.5):Math.min(window.devicePixelRatio||1,2);
+
+/* ---------- ambiance facultative : feuillage d'automne et teinte selon l'heure (désactivée par défaut, photos intactes) ---------- */
+let ambOn=false;function applyAmbiance(){if(tileset)tileset.customShader=ambOn?shader:undefined;}
+const shader=new C.CustomShader({
+  lightingModel:C.LightingModel.UNLIT,
+  uniforms:{u_autumn:{type:C.UniformType.FLOAT,value:0},u_tint:{type:C.UniformType.VEC3,value:new C.Cartesian3(1,1,1)},u_sat:{type:C.UniformType.FLOAT,value:1}},
+  fragmentShaderText:`
+vec3 rgb2hsv(vec3 c){vec4 K=vec4(0.,-1./3.,2./3.,-1.);vec4 p=mix(vec4(c.bg,K.wz),vec4(c.gb,K.xy),step(c.b,c.g));vec4 q=mix(vec4(p.xyw,c.r),vec4(c.r,p.yzx),step(p.x,c.r));
+  float d=q.x-min(q.w,q.y);float e=1.0e-10;return vec3(abs(q.z+(q.w-q.y)/(6.*d+e)),d/(q.x+e),q.x);}
+float hash3(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
+void fragmentMain(FragmentInput fsInput,inout czm_modelMaterial material){
+  vec3 c=material.diffuse;
+  vec3 hsv=rgb2hsv(c);float h=hsv.x*360.;
+  // feuillage : teintes vertes, assez saturées, plutôt sombres (les pelouses claires sont moins touchées)
+  float veg=smoothstep(55.,80.,h)*(1.-smoothstep(150.,172.,h))*smoothstep(.10,.24,hsv.y)*(1.-smoothstep(.50,.72,hsv.z));
+  vec3 cell=floor(fsInput.attributes.positionWC/6.5);float n=hash3(cell),n2=hash3(cell+17.3);
+  vec3 aut=n<.22?vec3(.66,.14,.05):n<.44?vec3(.84,.34,.07):n<.66?vec3(.90,.62,.12):n<.82?vec3(.62,.40,.12):vec3(.45,.55,.18);
+  float lum=dot(c,vec3(.299,.587,.114));
+  vec3 target=aut*(lum/max(dot(aut,vec3(.299,.587,.114)),.05))*1.08;
+  c=mix(c,target,veg*u_autumn*(.72+.28*n2));
+  float g=dot(c,vec3(.299,.587,.114));c=mix(vec3(g),c,u_sat);
+  material.diffuse=c*u_tint;
+}`});
+
+/* ---------- chargement du maillage ---------- */
+let tileset=null;
+async function load(key){
+  key=(key||'').trim();if(!key){keyMsg.textContent='Collez un jeton ou une clé pour continuer.';return false;}
+  keyMsg.textContent='Chargement…';
+  try{
+    if(tileset){scene.primitives.remove(tileset);tileset=null;}
+    let ts;
+    if(/^AIza/.test(key)){C.GoogleMaps.defaultApiKey=key;ts=await C.createGooglePhotorealistic3DTileset({key,onlyUsingWithGoogleGeocoder:true},{showCreditsOnScreen:true,maximumScreenSpaceError:isMobile?16:8,...(isMobile?{cacheBytes:192*1048576,maximumCacheOverflowBytes:128*1048576}:{})});}
+    else{C.GoogleMaps.defaultApiKey=undefined;C.Ion.defaultAccessToken=key;ts=await C.createGooglePhotorealistic3DTileset({onlyUsingWithGoogleGeocoder:true},{showCreditsOnScreen:true,maximumScreenSpaceError:isMobile?16:8,...(isMobile?{cacheBytes:192*1048576,maximumCacheOverflowBytes:128*1048576}:{})});}
+    tileset=scene.primitives.add(ts);applyAmbiance();
+    store.set(key);keyPanel.hidden=true;keyMsg.textContent='';return true;
+  }catch(e){
+    console.error(e);
+    keyMsg.textContent="Le maillage n'a pas pu être chargé avec cette clé. Vérifiez qu'elle est complète"+(/^AIza/.test(key)?" et que l'API Map Tiles est activée dans votre projet Google Cloud.":" et que le compte Cesium ion a accès aux tuiles photoréalistes de Google (Asset Depot).");
+    keyPanel.hidden=false;return false;}
+}
+document.getElementById('keyGo').addEventListener('click',()=>load(keyInput.value));
+keyInput.addEventListener('keydown',e=>{if(e.key==='Enter')load(keyInput.value);});
+document.getElementById('keyBtn').addEventListener('click',()=>{keyInput.value=store.get();keyPanel.hidden=false;keyInput.focus();});
+
+/* ---------- points de vue (altitudes au-dessus du niveau de la mer ; ondulation du géoïde à Montréal : environ -32 m) ---------- */
+const N=-32;
+const V={
+  fleuve:[[45.4935,-73.5330,230],[45.5000,-73.5740,110]],
+  centre:[[45.4955,-73.5620,330],[45.5025,-73.5710,120]],
+  habitat:[[45.5036,-73.5478,75],[45.4999,-73.5434,22]],
+  spectacles:[[45.5058,-73.5618,115],[45.5083,-73.5668,50]],
+  plateau:[[45.5198,-73.5728,105],[45.5165,-73.5690,55]],
+  lafontaine:[[45.5312,-73.5742,135],[45.5268,-73.5685,55]],
+  canal:[[45.4808,-73.5812,80],[45.4960,-73.5650,90]],
+  croix:[[45.5132,-73.5822,275],[45.50887,-73.58782,240]],
+  stade:[[45.5505,-73.5425,260],[45.5582,-73.5519,90]],
+  kondiaronk:[[45.50335,-73.5872,226],[45.4990,-73.5640,95]],
+  mcgill:[[45.50196,-73.57131,52],[45.50887,-73.58782,245]],
+  vieux:[[45.50655,-73.55985,62],[45.50447,-73.55621,45]],
+  port:[[45.5128,-73.5395,60],[45.5030,-73.5620,80]],
+  pont:[[45.5160,-73.5345,120],[45.5050,-73.5650,110]],
+  oratoire:[[45.4868,-73.6118,235],[45.49189,-73.61651,215]],
+  aerien:[[45.4700,-73.5150,2600],[45.5010,-73.5720,80]]
+};
+function flyTo(k,instant,dur){const [e,t]=V[k];const eye=C.Cartesian3.fromDegrees(e[1],e[0],e[2]+N),tg=C.Cartesian3.fromDegrees(t[1],t[0],t[2]+N);
+  const dir=C.Cartesian3.normalize(C.Cartesian3.subtract(tg,eye,new C.Cartesian3()),new C.Cartesian3());
+  let up=C.Ellipsoid.WGS84.geodeticSurfaceNormal(eye,new C.Cartesian3());const d=C.Cartesian3.dot(up,dir);
+  up=C.Cartesian3.normalize(C.Cartesian3.subtract(up,C.Cartesian3.multiplyByScalar(dir,d,new C.Cartesian3()),new C.Cartesian3()),new C.Cartesian3());
+  const opt={destination:eye,orientation:{direction:dir,up}};
+  if(instant)viewer.camera.setView(opt);else viewer.camera.flyTo(Object.assign(opt,{duration:dur||2.2}));
+  const b=document.querySelector('#views button[data-v="'+k+'"]');if(b&&!instant)b.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+  document.querySelectorAll('#views button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===k)));}
+document.getElementById('views').addEventListener('click',e=>{const b=e.target.closest('button');if(b){stopTour();flyTo(b.dataset.v);}});
+/* ---------- visite guidée : enchaîne les points de vue ---------- */
+const tourBtn=document.getElementById('tourBtn');const order=[...document.querySelectorAll('#views button')].map(b=>b.dataset.v);let tourT=null,tourI=0;
+function stopTour(){if(tourT){clearTimeout(tourT);tourT=null;}tourBtn.setAttribute('aria-pressed','false');tourBtn.textContent='Visite guidée';}
+function stepTour(){flyTo(order[tourI%order.length],false,5.5);tourI++;tourT=setTimeout(stepTour,10500);}
+tourBtn.addEventListener('click',()=>{if(tourT){stopTour();return;}tourBtn.setAttribute('aria-pressed','true');tourBtn.textContent='Arrêter la visite';stepTour();});
+for(const ev of['pointerdown','wheel','touchstart'])viewer.canvas.addEventListener(ev,stopTour,{passive:true});
+
+/* ---------- heure du jour (25 octobre, heure avancée de l'Est) ---------- */
+const smooth=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);};
+function setTime(t){
+  const hh=Math.floor(t),mm=Math.round((t-hh)*60);
+  viewer.clock.currentTime=C.JulianDate.fromDate(new Date(Date.UTC(2026,9,25,hh+4,mm===60?0:mm)));
+  const f=(t-7.42)/(17.92-7.42),elev=Math.max(-10,33*Math.sin(Math.PI*f)-(f<0||f>1?Math.min(10,Math.abs(f<0?f:f-1)*40):0));
+  const day=smooth(-6,6,elev),gold=1-smooth(4,16,elev);
+  // teinte : neutre le jour, dorée en fin d'après-midi, bleutée et sombre au crépuscule et la nuit
+  const r=(1+.10*gold)*(.22+.78*day),g=(1-.02*gold)*(.24+.76*day),b=(1-.16*gold)*(.34+.66*day);
+  shader.setUniform('u_tint',new C.Cartesian3(r,g,b));shader.setUniform('u_sat',.75+.3*day);
+  document.getElementById('timeOut').textContent=`${mm===60?hh+1:hh} h ${String(mm===60?0:mm).padStart(2,'0')}`;
+}
+const timeEl=document.getElementById('time');timeEl.addEventListener('input',()=>setTime(+timeEl.value));setTime(+timeEl.value);
+const aBtn=document.getElementById('autumnBtn'),ambBtn=document.getElementById('ambBtn');
+ambBtn.addEventListener('click',()=>{ambOn=!ambOn;ambBtn.setAttribute('aria-pressed',String(ambOn));ambBtn.textContent=ambOn?"Désactiver l'ambiance":"Activer l'ambiance";applyAmbiance();});
+aBtn.addEventListener('click',()=>{const on=aBtn.getAttribute('aria-pressed')!=='true';aBtn.setAttribute('aria-pressed',String(on));shader.setUniform('u_autumn',on?1:0);if(on&&!ambOn)ambBtn.click();});
+timeEl.addEventListener('input',()=>{if(!ambOn)ambBtn.click();});
+
+flyTo('fleuve',true);
+const JETON='';
+const hp=new URLSearchParams(location.hash.slice(1)).get('jeton');
+if(hp){store.set(hp);try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
+const saved=hp||store.get()||JETON;
+if(saved){keyInput.value=saved;const ok=await load(saved);if(!ok)keyPanel.hidden=false;}else keyPanel.hidden=false;
+window.__ready=true;
+})();
+</script>
+</body>
+</html>
